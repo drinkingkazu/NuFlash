@@ -16,16 +16,31 @@ void TreeLooper::Analyze()
   _ch->SetBranchAddress("subrun",&_subrun);
   _ch->SetBranchAddress("event",&_event);
 
+  _tree->Branch("run",&_run,"run/i");
+  _tree->Branch("subrun",&_subrun,"subrun/i");
+  _tree->Branch("event",&_event,"event/i");
+  _tree->Branch("dt",&_dt,"dt/D");
+  _tree->Branch("pe_total",&_pe_total,"pe_total/D");
+
+  std::cout<<_min_dt<<" => "<<_max_dt<<" ... width "<<_bin_width<<std::endl;
   for(size_t i=0; i<nevents; ++i) {
 
     _ch->GetEntry(i);
 
+    if(_run < _min_run || _max_run < _run) continue;
+
+    if(_run == _min_run && _subrun < _min_subrun) continue;
+    if(_run == _max_run && _max_subrun < _subrun) continue;
+
     if(_dt < _min_dt || _max_dt < _dt) continue;
+
+    if(_pe_total < 50) continue;
 
     int bin_index = int((_dt - _min_dt)/_bin_width);
 
     _flash_count[bin_index] += 1;
 
+    _tree->Fill();
   }
 
   std::vector<double> x_v, xerr_v, yerr_v;
@@ -41,7 +56,7 @@ void TreeLooper::Analyze()
 
   }
   
-  _gDT = new TGraphErrors(&x_v[0],&_flash_count[0],&xerr_v[0],&yerr_v[0]);
+  _gDT = new TGraphErrors(_flash_count.size(),&x_v[0],&_flash_count[0],&xerr_v[0],&yerr_v[0]);
   _gDT->SetName("gDT");
 
 }
